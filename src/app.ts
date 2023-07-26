@@ -1,49 +1,36 @@
-import hash from 'object-hash';
+export const calculateEditDistance = (incoming, expected) => {
+  incoming = incoming.trim().replace(/\s{2,}/g, ' ').split(' ');
+  expected = expected.trim().replace(/\s{2,}/g, ' ').split(' ');
 
-export const createHashArray = (s: string) => {
-  return s.toLowerCase()
-    .split(" ")
-    .map(word => hash(word));
-}
+  const dp = [];
+  for (let i = 0; i < expected.length + 1; i++) {
+    dp.push([]);
+    for (let j = 0; j < incoming.length + 1; j++) {
+      dp[i].push("");
+    }
+  }
 
-export const calculateEditDistance = (incoming: string, expected: string) => {
-  if (incoming.length === 0 || expected.length === 0) return Math.max(incoming.split(" ").length, expected.split(" ").length);
+  for (let i = 0; i < dp[0].length; i++) {
+    dp[0][i] = i;
+  }
+  for (let i = 1; i < dp.length; i++) {
+    dp[i][0] = i;
+  }
 
-  let [incomingHashes, expectedHashes] = [createHashArray(incoming), createHashArray(expected)];
-  let [length, height] = [incomingHashes.length, expectedHashes.length];
+  for (let i = 1; i < dp.length; i++) {
+    for (let j = 1; j < dp[i].length; j++) {
+      const a = expected[i - 1];
+      const b = incoming[j - 1];
 
-  let dp = initializeArray(height, length);
-
-  for (let column = 0; column < height; column++) {
-    for (let row = 0; row < length; row++) {
-      if (column === 0 && row === 0) {
-        dp[column][row] = (incomingHashes[0] === expectedHashes[0]) ? 0 : 1;
-      } else if (row === 0) {
-        dp[column][row] = dp[column - 1][0] + ((incomingHashes[row] === expectedHashes[column]) ? 0 : 1);
-      } else if (column === 0) {
-        dp[column][row] = dp[0][row - 1] + ((incomingHashes[row] === expectedHashes[column]) ? 0 : 1);
-      } else {
-        dp[column][row] =
-          Math.min(
-            (dp[column - 1][row] + 1),
-            (dp[column][row - 1] + 1),
-            (dp[column - 1][row - 1] + (incomingHashes[row] === expectedHashes[column] ? 0 : 1))
-          )
+      if (a === b) {
+        dp[i][j] = dp[i -1][j - 1];
+      }
+      else {
+        dp[i][j] =  Math.min(dp[i - 1][j], dp[i - 1][j -1], dp[i][j - 1]) + 1;
       }
     }
   }
-  return dp[height - 1][length - 1];
-}
-
-const initializeArray = (length, height) => {
-  let dp: number[][] = [];
-  for (let i = 0; i < length; i++) {
-    dp.push([]);
-    for (let j = 0; j < height; j++) {
-      dp[i].push(-1);
-    }
-  }
-  return dp;
+  return dp[expected.length][incoming.length];
 }
 
 export const wordErrorRate = (incoming: string, expected: string) => {
